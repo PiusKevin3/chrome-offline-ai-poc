@@ -1,0 +1,24 @@
+{
+  "name": "offline-inference-poc",
+  "version": "1.0.0",
+  "description": "POC using headless Chrome offline AI via Puppeteer and Express",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "chrome",
+    "offline-ai",
+    "gemini-nano",
+    "puppeteer",
+    "openai-api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "puppeteer-core": "^22.12.0"
+  }
+}

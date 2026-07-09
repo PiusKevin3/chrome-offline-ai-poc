@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome Offline AI - Developer Playground</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="glass-bg"></div>
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="logo-icon">⚡</span>
+        <div class="logo-text">
+          <h1>Chrome Offline AI</h1>
+          <p>Local Inference Service POC</p>
+        </div>
+      </div>
+      
+      <div class="header-status">
+        <span id="status-badge" class="status-badge status-loading">
+          <span class="status-dot"></span>
+          <span id="status-text">Connecting to Chrome...</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="dashboard-grid">
+      
+      <!-- Sidebar / Config -->
+      <section class="dashboard-sidebar">
+        
+        <!-- Connection Info -->
+        <div class="card glass-card">
+          <h2 class="card-title">Backend Status</h2>
+          <div class="status-info-row">
+            <span class="info-label">Express API:</span>
+            <span id="express-port-status" class="info-value text-glow-green">Checking...</span>
+          </div>
+          <div class="status-info-row">
+            <span class="info-label">Chrome Host:</span>
+            <span id="chrome-host-status" class="info-value">Connecting...</span>
+          </div>
+          <div class="status-info-row">
+            <span class="info-label">Model API:</span>
+            <span id="model-api-status" class="info-value">Checking...</span>
+          </div>
+          <div id="download-progress-container" class="progress-bar-container hidden">
+            <div class="progress-bar-track">
+              <div id="download-progress-bar" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="status-info-row file-info">
+            <span class="info-label">Data Profile:</span>
+            <span class="info-value code-path">.chrome_profile</span>
+          </div>
+          <div class="apis-status-section">
+            <h3 class="subsection-title">Available Features</h3>
+            <div class="api-indicator-grid">
+              <span class="api-tag tag-offline" id="tag-prompt" title="Prompt API">Prompt</span>
+              <span class="api-tag tag-offline" id="tag-summarize" title="Summarizer API">Summarizer</span>
+              <span class="api-tag tag-offline" id="tag-translate" title="Translator API">Translator</span>
+              <span class="api-tag tag-offline" id="tag-detect" title="Language Detector API">Detector</span>
+              <span class="api-tag tag-offline" id="tag-writer" title="Writer/Rewriter API">Writer</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model Configuration -->
+        <div class="card glass-card">
+          <h2 class="card-title">Model Parameters</h2>
+          <div class="param-group">
+            <div class="param-label-row">
+              <label for="system-prompt">System Instruction</label>
+            </div>
+            <textarea id="system-prompt" placeholder="You are a helpful, concise assistant."></textarea>
+          </div>
+
+          <div class="param-group">
+            <div class="param-label-row">
+              <label for="param-temp">Temperature</label>
+              <span id="temp-val" class="param-value">0.8</span>
+            </div>
+            <input type="range" id="param-temp" min="0.0" max="1.0" step="0.1" value="0.8">
+            <span class="param-hint">Controls output randomness. Lower is more deterministic.</span>
+          </div>
+
+          <div class="param-group">
+            <div class="param-label-row">
+              <label for="param-topk">Top K</label>
+              <span id="topk-val" class="param-value">3</span>
+            </div>
+            <input type="range" id="param-topk" min="1" max="10" step="1" value="3">
+            <span class="param-hint">Limits predictions to top K tokens. Lower decreases variety.</span>
+          </div>
+          
+          <div class="param-group inline-checkbox">
+            <input type="checkbox" id="param-stream" checked>
+            <label for="param-stream">Stream Output (SSE)</label>
+          </div>
+        </div>
+
+        <!-- Latency Metrics -->
+        <div class="card glass-card">
+          <h2 class="card-title">Performance Metrics</h2>
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <span class="metric-val" id="metric-avg-speed">-</span>
+              <span class="metric-lbl">Tokens/sec</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-val" id="metric-latency">-</span>
+              <span class="metric-lbl">Avg Duration</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Playground -->
+      <section class="dashboard-main">
+        
+        <!-- Tabs Header Bar -->
+        <div class="tab-header-bar">
+          <button class="tab-btn active" data-tab="chat">
+            <span class="tab-icon">💬</span> Chat
+          </button>
+          <button class="tab-btn" data-tab="summarize">
+            <span class="tab-icon">📝</span> Summarize
+          </button>
+          <button class="tab-btn" data-tab="translate">
+            <span class="tab-icon">🌐</span> Translate
+          </button>
+          <button class="tab-btn" data-tab="detect">
+            <span class="tab-icon">🔍</span> Detect Language
+          </button>
+          <button class="tab-btn" data-tab="write">
+            <span class="tab-icon">✍️</span> Write & Rewrite
+          </button>
+        </div>
+
+        <!-- Tab 1: Chat Playground Content -->
+        <div class="tab-content chat-tab-content">
+          <div class="card glass-card chat-card">
+            <div class="chat-header">
+              <h3>Interactive Playground</h3>
+              <button id="clear-chat-btn" class="btn btn-secondary">Clear Session</button>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages">
+              <div class="message system-message">
+                <div class="message-content">
+                  Welcome to the Chrome Offline AI Developer Playground. Headless Chrome is powering this window! Ask a question to begin.
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-input-status-row">
+              <div id="stream-speed-indicator" class="stream-speed-indicator hidden">
+                Streaming: <span id="current-speed">0</span> tokens/sec
+              </div>
+              <div id="token-counter-badge" class="token-counter-badge">
+                Tokens: <span id="input-token-count">0</span>
+              </div>
+            </div>
+            
+            <div class="chat-input-area">
+              <textarea id="chat-input" placeholder="Type your prompt here... (Press Ctrl+Enter to send)"></textarea>
+              <button id="send-btn" class="btn btn-primary">
+                <span>Send</span>
+                <span class="send-icon">➔</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Summarizer Content -->
+        <div class="tab-content summarize-tab-content hidden">
+          <div class="card glass-card tool-card">
+            <div class="tool-header">
+              <h3>Text Summarization</h3>
+              <p class="tool-desc">Paste a long text block and let Gemini Nano summarize it locally on your device.</p>
+            </div>
+            <div class="tool-body">
+              <div class="input-group">
+                <label for="summarize-input">Source Text</label>
+                <textarea id="summarize-input" placeholder="Paste your text here (minimum 50 words recommended)..."></textarea>
+              </div>
+              <div class="options-grid">
+                <div class="select-group">
+                  <label for="summarize-type">Summary Type</label>
+                  <select id="summarize-type">
+                    <option value="key-points" selected>Key Points</option>
+                    <option value="tl;dr">TL;DR</option>
+                    <option value="teaser">Teaser</option>
+                    <option value="headline">Headline</option>
+                  </select>
+                </div>
+                <div class="select-group">
+                  <label for="summarize-length">Length</label>
+                  <select id="summarize-length">
+                    <option value="short">Short</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="long">Long</option>
+                  </select>
+                </div>
+                <div class="select-group">
+                  <label for="summarize-format">Format</label>
+                  <select id="summarize-format">
+                    <option value="markdown" selected>Markdown</option>
+                    <option value="plain-text">Plain Text</option>
+                  </select>
+                </div>
+              </div>
+              <button id="summarize-btn" class="btn btn-primary">Summarize</button>
+              <div class="result-group hidden" id="summarize-result-container">
+                <div class="result-header-row">
+                  <label>Summary Result</label>
+                  <button class="copy-btn" data-target="summarize-result">Copy Text</button>
+                </div>
+                <div id="summarize-result" class="result-box"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Translator Content -->
+        <div class="tab-content translate-tab-content hidden">
+          <div class="card glass-card tool-card">
+            <div class="tool-header">
+              <h3>Text Translation</h3>
+              <p class="tool-desc">Translate text locally between supported languages instantly.</p>
+            </div>
+            <div class="tool-body">
+              <div class="input-group">
+                <label for="translate-input">Text to Translate</label>
+                <textarea id="translate-input" placeholder="Type or paste text here..."></textarea>
+              </div>
+              <div class="options-grid">
+                <div class="select-group">
+                  <label for="translate-source">Source Language</label>
+                  <select id="translate-source">
+                    <option value="en" selected>English (en)</option>
+                    <option value="es">Spanish (es)</option>
+                    <option value="fr">French (fr)</option>
+                    <option value="de">German (de)</option>
+                    <option value="ja">Japanese (ja)</option>
+                    <option value="zh">Chinese (zh)</option>
+                  </select>
+                </div>
+                <div class="select-group">
+                  <label for="translate-target">Target Language</label>
+                  <select id="translate-target">
+                    <option value="es" selected>Spanish (es)</option>
+                    <option value="en">English (en)</option>
+                    <option value="fr">French (fr)</option>
+                    <option value="de">German (de)</option>
+                    <option value="ja">Japanese (ja)</option>
+                    <option value="zh">Chinese (zh)</option>
+                  </select>
+                </div>
+              </div>
+              <button id="translate-btn" class="btn btn-primary">Translate</button>
+              <div class="result-group hidden" id="translate-result-container">
+                <div class="result-header-row">
+                  <label>Translation Result</label>
+                  <button class="copy-btn" data-target="translate-result">Copy Text</button>
+                </div>
+                <div id="translate-result" class="result-box"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Language Detector Content -->
+        <div class="tab-content detect-tab-content hidden">
+          <div class="card glass-card tool-card">
+            <div class="tool-header">
+              <h3>Language Detector</h3>
+              <p class="tool-desc">Identify the language of any input text block locally.</p>
+            </div>
+            <div class="tool-body">
+              <div class="input-group">
+                <label for="detect-input">Text to Analyze</label>
+                <textarea id="detect-input" placeholder="Type or paste text in any language here..."></textarea>
+              </div>
+              <button id="detect-btn" class="btn btn-primary">Detect Language</button>
+              <div class="result-group hidden" id="detect-result-container">
+                <div class="result-header-row">
+                  <label>Detection Results (sorted by confidence)</label>
+                  <button class="copy-btn" data-target="detect-result">Copy Text</button>
+                </div>
+                <div id="detect-result" class="result-box"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Writer & Rewriter Content -->
+        <div class="tab-content write-tab-content hidden">
+          <div class="card glass-card tool-card">
+            <div class="tool-header">
+              <h3>Writing & Editing Assistant</h3>
+              <p class="tool-desc">Compose new content or transform existing text with fine-grained controls.</p>
+            </div>
+            <div class="tool-body">
+              <div class="mode-toggle">
+                <button class="mode-btn active" id="mode-write" data-mode="write">Create Content</button>
+                <button class="mode-btn" id="mode-rewrite" data-mode="rewrite">Rewrite Existing</button>
+              </div>
+              <div class="input-group" id="write-prompt-group">
+                <label for="write-prompt">What do you want to write?</label>
+                <textarea id="write-prompt" placeholder="e.g. A polite email asking for project updates..."></textarea>
+              </div>
+              <div class="input-group hidden" id="write-text-group">
+                <label for="write-text">Text to Rewrite</label>
+                <textarea id="write-text" placeholder="Paste the original text to modify here..."></textarea>
+              </div>
+              <div class="input-group">
+                <label for="write-context">Additional Context (Optional)</label>
+                <input type="text" id="write-context" placeholder="e.g. recipient is a senior manager, keep it under 3 sentences...">
+              </div>
+              <div class="options-grid">
+                <div class="select-group">
+                  <label for="write-tone">Tone</label>
+                  <select id="write-tone">
+                    <option value="neutral" selected>Neutral</option>
+                    <option value="formal">Formal</option>
+                    <option value="casual">Casual</option>
+                  </select>
+                </div>
+                <div class="select-group">
+                  <label for="write-length">Length</label>
+                  <select id="write-length">
+                    <option value="short" selected>Short</option>
+                    <option value="medium">Medium</option>
+                    <option value="long">Long</option>
+                  </select>
+                </div>
+                <div class="select-group">
+                  <label for="write-format">Format</label>
+                  <select id="write-format">
+                    <option value="plain-text" selected>Plain Text</option>
+                    <option value="markdown">Markdown</option>
+                  </select>
+                </div>
+              </div>
+              <button id="write-submit-btn" class="btn btn-primary">Generate Text</button>
+              <div class="result-group hidden" id="write-result-container">
+                <div class="result-header-row">
+                  <label>Assistant Response</label>
+                  <button class="copy-btn" data-target="write-result">Copy Text</button>
+                </div>
+                <div id="write-result" class="result-box"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Request Logs -->
+        <div class="card glass-card console-card">
+          <div class="console-header">
+            <h3>Live HTTP API Request Log</h3>
+            <span class="api-slug">POST /v1/chat/completions</span>
+          </div>
+          <div id="console-logs" class="console-logs">
+            <div class="console-placeholder">Waiting for requests... Send a chat message or call the REST endpoint to see server traces.</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
