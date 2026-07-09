@@ -127,7 +127,7 @@ Building this POC highlighted a paradigm shift in how we build software with AI.
 
 By leveraging dynamic subagents, safety policies, background queues, and ephemeral skills, I shifted my focus from debugging Puppeteer connection failures and checking port configurations to designing the overall data flow and system architecture.
 
-If you are a Google Developer Expert or engineer looking to participate in **The Agentic Architect Sprint** (running until July 10th, 2026), I highly recommend using Antigravity 2.0 to tackle complex, multi-repo, and on-device integrations. 
+I highly recommend using Antigravity 2.0 to tackle complex, multi-repo, and on-device integrations. 
 
 Check out the full repository and setup instructions here:  
 👉 **[chrome-offline-ai-poc on GitHub](https://github.com/PiusKevin3/chrome-offline-ai-poc)**
